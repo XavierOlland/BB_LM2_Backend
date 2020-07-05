@@ -1,8 +1,6 @@
 <?php
 $action = $_GET["action"];
 
-
-
 include('config.php');
 
 $postdata = file_get_contents("php://input");
@@ -78,6 +76,9 @@ switch ($action) {
         break;
     case "upcomingGames":
         upcomingGames($con);
+        break;
+    case "lastGames":
+        lastGames($con);
         break;
     case "alltojson":
         save_all_to_json($con, $Cyanide_Key);
