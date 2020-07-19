@@ -13,6 +13,7 @@ include('player.php');
 include('sponsors.php');
 include('statistics.php');
 include('team.php');
+include('discord.php');
 
 switch ($action) {
     case "archives":
@@ -82,6 +83,9 @@ switch ($action) {
         break;
     case "alltojson":
         save_all_to_json($con, $Cyanide_Key);
+        break;
+    case "discord":
+        match_to_discord('#FFCC00');
         break;
     default:
         echo "Erreur!";
