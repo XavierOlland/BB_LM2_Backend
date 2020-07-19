@@ -8,6 +8,8 @@ function match_fetch($con,$id){
     $sqlMatch = "SELECT m.cyanide_id,
           m.contest_id,
           m.competition_id,
+          a.site_name as competition_name,
+          a.season,
           a.active as competition_active,
           m.round,
           DATE_ADD(m.started, INTERVAL 500 YEAR) AS started,
