@@ -45,10 +45,11 @@ switch ($action) {
         echo json_encode($competition,JSON_NUMERIC_CHECK);
         break;
     case "match":
-        match_fetch($con, $params[0]);
+        $match = match_fetch($con, $params[0]);
+        echo json_encode($match,JSON_NUMERIC_CHECK);
         break;
     case "matchDate":
-        vue_match_set_date($con,$params);
+        vue_match_set_date($con, $params);
         break;
     case "matchReset":
         match_save($con, $Cyanide_Key, $params, 1);
@@ -70,10 +71,10 @@ switch ($action) {
         echo json_encode($competition,JSON_NUMERIC_CHECK);
         break;
     case "sponsorsCalendar":
-        sponsors_calendar($con,$params[0]);
+        sponsors_calendar($con, $params[0]);
         break;
     case "sponsorsStanding":
-        sponsors_standing($con,$params[0]);
+        sponsors_standing($con, $params[0]);
         break;
     case "upcomingGames":
         upcomingGames($con);
@@ -83,9 +84,6 @@ switch ($action) {
         break;
     case "alltojson":
         save_all_to_json($con, $Cyanide_Key);
-        break;
-    case "discord":
-        match_to_discord('#FFCC00');
         break;
     default:
         echo "Erreur!";
