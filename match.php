@@ -32,7 +32,8 @@ function match_fetch($con,$id){
           c2.name AS coach_2_name,
           m.score_1 AS team_1_score,
           m.score_2 AS team_2_score,
-          fl.forum_id AS forum
+          fl.forum_id AS forum,
+          m.forum_url
           FROM site_matchs as m
           LEFT JOIN site_competitions as a ON a.id=m.competition_id
           LEFT JOIN site_teams as t1 ON t1.id=m.team_id_1
@@ -47,7 +48,7 @@ function match_fetch($con,$id){
     $request = './../resources/json/matches/'.$match->cyanide_id.'.json';
     $response  = @file_get_contents($request);
     if($response===FALSE){
-      $sqlJson = "SELECT * FROM site_matchs WHERE id='".$id."' OR m.cyanide_id='".$id."'";
+      $sqlJson = "SELECT * FROM site_matchs WHERE id=".$match->id;
       $resultJson = $con->query($sqlJson);
       $json = $resultJson->fetch_object();
       $response = json_encode($json);
@@ -55,6 +56,13 @@ function match_fetch($con,$id){
 
     $match->json = $response;
     $match->stadium = json_decode($response)->teams[0]->stadiumname;
+
+    $sqlForum = "SELECT forum_id, topic_id FROM forum_posts WHERE post_text LIKE '%<s>[match]</s>".$match->id."<e>[/match]</e>%'";
+    $resultForum = $con->query($sqlForum);
+    $forum = $resultForum->fetch_object();
+    $match->forum_url = "https://bbbl.fr/Forum/viewtopic.php?f=".$forum->forum_id."&t=".$forum->topic_id;
+    $sqlForumURL = "UPDATE site_matchs SET forum_url='".$match->forum_url."' WHERE id=".$match->id;
+    $con->query($sqlForumURL);
 
     // $match->bets = [];
     // $sqlBets = "SELECT p.match_id, m.score_1, m.score_2, p.team_score_1, p.team_score_2, c.name FROM site_matchs AS m, site_bets AS p, site_coachs AS c WHERE c.id=p.coach_id AND p.match_id=m.id AND match_id=".$id;
@@ -74,7 +82,6 @@ function match_set_date($con, $params){
     $sqlMatch = "UPDATE site_matchs SET started = str_to_date('".$params->started."','%d/%m/%Y %H:%i') WHERE id=".$params->id;
     $con->query($sqlMatch);
     $con->close();
-};
 //Set date
 function vue_match_set_date($con, $params){
     mysqli_set_charset($con,'utf8');
@@ -88,7 +95,7 @@ function match_save($con, $Cyanide_Key, $params, $reset){
 
     $request = 'http://web.cyanide-studio.com/ws/bb2/match/?key='.$Cyanide_Key.'&uuid='.$params[0];
     $response  = file_get_contents($request);
-    //file_put_contents( './../resources/json/matches/'.$params[0].'.json', $response);
+    file_put_contents( './../resources/json/matches/'.$params[0].'.json', $response);
     $json = str_replace("\\","\\\\",$response);
     $matchDetails = json_decode($response);
 

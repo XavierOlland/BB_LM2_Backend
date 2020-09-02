@@ -1,10 +1,10 @@
 <?php
 
 function match_to_discord($color, $match){
-    //echo json_encode($match);
+
     $season = $match->season == $match->competition_name? $match->season : $match->season." - ".$match->competition_name;
     //winner
-    if( $match->score_1 > $match->score_2 ){
+    if( $match->team_1_score > $match->team_2_score ){
       $winner = [$match->team_1_name, $match->coach_1_name];
       $loser = [$match->team_2_name, $match->coach_2_name];
     }
@@ -18,13 +18,14 @@ function match_to_discord($color, $match){
         "Statu quo dans la rencotre opposant ".$winner[1]." à ".$loser[1]
     ];
     $descriptions = [
-        "Match accroché où aucune équipe n'arrivera à se détacher. Un résultat qui, au final, n'arrange personne au classement.",
+        "Match accroché où aucune équipe n'arrivera à se détacher. De là à dire qu'il s'agissait d'un match nul... Nous laissons le public juge",
         "Les forces en présences étaient équilibrées pour ce match qui ne voit pas de vainqueur émerger.",
         "Un des joueurs, dont nous préserverons l'identité, nous a déclaré vouloir revenir au niveau amateur pour retrouver un intérêt à ce sport.",
         "La vraie question après ce match : les deux équipes étaient elles aussi bonne l'une que l'autre ou aussi mauvaise l'une que l'autre."
     ];
     //Victoires
-    $score = abs($match->score_1 - $match->score_2);
+    $score = abs($match->team_1_score - $match->team_2_score);
+
     if( $score != 0){
         $titles = [
             "Victoire de ".$winner[1]." face à ".$loser[1],
@@ -61,10 +62,10 @@ function match_to_discord($color, $match){
     };
 
 
-    $shuffle = shuffle($titles);
+    $shuffle = shuffle($titles)-1;
     $title = $titles[$shuffle];
-    $shuffle = shuffle($descriptions);
-    $description = $descriptions[$shuffle];
+    $nshuffle = shuffle($descriptions)-1;
+    $description = $descriptions[$nshuffle];
     $url = $_ENV['WEBSITE_URL']."/#/match/".$match->id;
     $link = "\n[Toutes les informations sur notre site](".$url.")";
     $description = $season."\n **".$match->team_1_name." ".$match->team_1_score." - ".$match->team_2_score." ".$match->team_2_name."** \n\n ".$description.$link;                   ;

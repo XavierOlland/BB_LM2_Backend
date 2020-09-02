@@ -41,7 +41,7 @@ switch ($action) {
         break;
     case "competitionUpdate":
         competition_update($con, $Cyanide_Key, $Cyanide_League, $params);
-        $competition = competition_fetch($con, $params[1]);
+        $competition = competition_fetch($con, $params[1], 1);
         echo json_encode($competition,JSON_NUMERIC_CHECK);
         break;
     case "match":
