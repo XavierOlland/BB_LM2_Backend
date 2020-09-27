@@ -224,17 +224,18 @@ function competition_stats($con, $competition){
 *        [4] Matchs to save, Array
  */
 function competition_update($con, $Cyanide_Key, $Cyanide_League, $params){
+  var_dump($params);
   if($params[2] == 'ladder'){
       competition_ladder_update($con, $Cyanide_Key, $Cyanide_League, $params);
-  };
-  // else {
-  //   if(count($params[4]) != 0){
-  //       competition_update_matchs($con, $Cyanide_Key, $Cyanide_League, $params);
-  //   }
-  //   elseif (in_array($params[2],['swiss','single_elimination'])) {
-  //       competition_next_round($con, $Cyanide_Key, $Cyanide_League, $params);
-  //   }
-  // }
+  }
+  else {
+    if(count($params[4]) != 0){
+        competition_update_matchs($con, $Cyanide_Key, $Cyanide_League, $params);
+    }
+    elseif (in_array($params[2],['swiss','single_elimination'])) {
+        competition_next_round($con, $Cyanide_Key, $Cyanide_League, $params);
+    }
+  }
 };
 
 //Update competition's matchs already played (except ladder)
@@ -251,7 +252,7 @@ function competition_update($con, $Cyanide_Key, $Cyanide_League, $params){
 */
 function competition_update_matchs($con, $Cyanide_Key, $Cyanide_League, $params){
 
-    $request = "http://web.cyanide-studio.com/ws/bb2/contests/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&competition=".urlencode($params[0])."&status=played&round=".$params[3];
+    $request = "https://web.cyanide-studio.com/ws/bb2/contests/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&competition=".urlencode($params[0])."&status=played&round=".$params[3];
     $response  = file_get_contents($request);
     $played = json_decode($response);
     //$matchsCount=0;
@@ -283,9 +284,9 @@ function competition_update_matchs($con, $Cyanide_Key, $Cyanide_League, $params)
 function competition_next_round($con, $Cyanide_Key, $Cyanide_League, $params){
 
     $nextRound = $params[3] + 1;
-    $request = "http://web.cyanide-studio.com/ws/bb2/contests/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&competition=".urlencode($params[0])."&exact=1&status=scheduled&round=".$nextRound;
+    $request = "https://web.cyanide-studio.com/ws/bb2/contests/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&competition=".urlencode($params[0])."&exact=1&status=scheduled&round=".$nextRound;
+    $response  = file_get_contents($request);
     $schedule = json_decode($response);
-
     //Saving matchs
     foreach ($schedule->upcoming_matches as $match) {
         $teams = [];
@@ -366,7 +367,8 @@ function competition_add_matchs($con, $Cyanide_Key, $competitionID, $competition
             }
             //add match
             $sqlMatch = "INSERT INTO site_matchs (contest_id, cyanide_id, competition_id, round, team_id_1, team_id_2)
-            VALUES (".$match->contest_id.",IFNULL('".$match->uuid."',NULL),".$competitionID.",".$match->round.",".$match->teamBBBL[0].",".$match->teamBBBL[1].")";
+            VALUES (".$match->contest_id.",NULL,".$competitionID.",".$match->round.",".$match->teamBBBL[0].",".$match->teamBBBL[1].")";
+            echo $sqlMatch."<br/>";
             $con->query($sqlMatch);
         }
     }
@@ -388,7 +390,7 @@ function competition_ladder_update($con, $Cyanide_Key, $Cyanide_League, $params)
   $sqlLastGame = "SELECT DATE_ADD(MAX(started), INTERVAL + 1 MINUTE ) FROM site_matchs";
   $Lastgame = $con->query($sqlLastGame);
   $DateLastgame = $Lastgame->fetch_row();
-  $request = "http://web.cyanide-studio.com/ws/bb2/matches/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&exact=1&competition=".urlencode($params[0])."&start=".urlencode($DateLastgame[0]);
+  $request = "https://web.cyanide-studio.com/ws/bb2/matches/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&exact=1&competition=".urlencode($params[0])."&start=".urlencode($DateLastgame[0]);
   $response  = file_get_contents($request);
   $played = json_decode($response);
   foreach($played->matches as $match){
@@ -426,7 +428,7 @@ function competition_ladder_update($con, $Cyanide_Key, $Cyanide_League, $params)
  * @param $Cyanide_League : League name in the game, String
  */
 function ingame_competition_fetch_all($con, $Cyanide_Key, $Cyanide_League){
-  $request = "http://web.cyanide-studio.com/ws/bb2/competitions/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&exact=1";
+  $request = "https://web.cyanide-studio.com/ws/bb2/competitions/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&exact=1";
   $response = file_get_contents($request);
   $arr = json_decode($response);
   $competitions = array_filter($arr->competitions, function($item){
@@ -435,7 +437,7 @@ function ingame_competition_fetch_all($con, $Cyanide_Key, $Cyanide_League){
           return true;
       }
   });
-  echo json_encode(array_values($competitions));
+  echo json_encode($competitions);
 };
 
 //Add new competition
@@ -462,13 +464,13 @@ function competition_add($con, $Cyanide_Key, $competition){
         $competition_id = $con->insert_id;
 
         if($competition->competition_mode!='Sponsors' && $competition->competition_mode!='ladder'){
-            $request = "http://web.cyanide-studio.com/ws/bb2/contests/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&exact=1&competition=".urlencode($competition->game_name);
+            $request = "https://web.cyanide-studio.com/ws/bb2/contests/?key=".$Cyanide_Key."&league=".urlencode($Cyanide_League)."&exact=1&competition=".urlencode($competition->game_name);
             $response = file_get_contents($request);
             $data = json_decode($response);
             $competition->id = $competition_id;
             $competition->matches = $data->upcoming_matches;
             competition_add_matchs($con, $Cyanide_Key, $competition->id, $competition);
-            //forum_links_add($con, $competition);
+            forum_links_add($con, $competition);
         };
 
         $json = new stdClass;

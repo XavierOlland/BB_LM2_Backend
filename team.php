@@ -30,7 +30,7 @@ function team_fetch($con, $id){
 //Create new team
 function team_create($con, $Cyanide_Key, $id){
 
-    $request = 'http://web.cyanide-studio.com/ws/bb2/team/?key='.$Cyanide_Key.'&id='.$id;
+    $request = 'https://web.cyanide-studio.com/ws/bb2/team/?key='.$Cyanide_Key.'&id='.$id;
     $response  = file_get_contents($request);
     $json = json_decode($response);
     $team = $json->team;
@@ -40,7 +40,7 @@ function team_create($con, $Cyanide_Key, $id){
     $team->stadium_name = str_replace("'","\'",$team->stadiumname);
     $team->leitmotiv = str_replace("'","\'",$team->leitmotiv);
     $sqlCreate = "INSERT INTO site_teams ( name, cyanide_id, coach_id, param_id_race, active, apothecary, assistantcoaches,  cheerleaders, cash, rerolls, popularity, value, stadium_name, stadium_level, leitmotiv, logo) VALUES ('".$team->name."', '".$team->id."', '".$team->idcoach."', '".$team->idraces."', '1', '".$team->apothecary."', '".$team->assistantcoaches."', '".$team->cheerleaders."', '".$team->cash."', '".$team->rerolls."', '".$team->popularity."', '".$team->value."', '".$team->stadium_name."', ".$team->stadiumlevel.", '".$team->leitmotiv."', '".$team->logo."')";
-    echo $sqlCreate.'<br/>';
+    //echo $sqlCreate.'<br/>';
     $con->query($sqlCreate);
     $team->bbblID = $con->insert_id;
 
@@ -53,7 +53,7 @@ function team_create($con, $Cyanide_Key, $id){
 //Update team
 function team_update($con, $Cyanide_Key, $teamID){
 
-    $request = 'http://web.cyanide-studio.com/ws/bb2/team/?key='.$Cyanide_Key.'&id='.$teamID;
+    $request = 'https://web.cyanide-studio.com/ws/bb2/team/?key='.$Cyanide_Key.'&id='.$teamID;
     $response  = file_get_contents($request);
     $json = json_decode($response);
     $team = $json->team;

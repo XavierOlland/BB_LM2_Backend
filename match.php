@@ -85,7 +85,7 @@ function vue_match_set_date($con, $params){
 //Save match
 function match_save($con, $Cyanide_Key, $params, $reset){
 
-    $request = 'http://web.cyanide-studio.com/ws/bb2/match/?key='.$Cyanide_Key.'&uuid='.$params[0];
+    $request = 'https://web.cyanide-studio.com/ws/bb2/match/?key='.$Cyanide_Key.'&uuid='.$params[0];
     $response  = file_get_contents($request);
     file_put_contents( './../resources/json/matches/'.$params[0].'.json', $response);
     $json = str_replace("\\","\\\\",$response);
@@ -135,7 +135,7 @@ function save_all_to_json($con, $Cyanide_Key){
     $sql = "SELECT cyanide_id FROM site_matchs WHERE cyanide_id IS NOT NULL AND competition_id>231";
     $result = $con->query($sql);
     while($data = $result->fetch_object()) {
-        $request = 'http://web.cyanide-studio.com/ws/bb2/match/?key='.$Cyanide_Key.'&uuid='.$data->cyanide_id;
+        $request = 'https://web.cyanide-studio.com/ws/bb2/match/?key='.$Cyanide_Key.'&uuid='.$data->cyanide_id;
         $response  = file_get_contents($request);
         file_put_contents( './../resources/json/matches/'.$data->cyanide_id.'.json', $response);
     }
