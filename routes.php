@@ -13,6 +13,7 @@ include('player.php');
 include('sponsors.php');
 include('statistics.php');
 include('team.php');
+include('discord.php');
 
 switch ($action) {
     case "archives":
@@ -40,14 +41,15 @@ switch ($action) {
         break;
     case "competitionUpdate":
         competition_update($con, $Cyanide_Key, $Cyanide_League, $params);
-        $competition = competition_fetch($con, $params[1]);
+        $competition = competition_fetch($con, $params[1], 1);
         echo json_encode($competition,JSON_NUMERIC_CHECK);
         break;
     case "match":
-        match_fetch($con, $params[0]);
+        $match = match_fetch($con, $params[0]);
+        echo json_encode($match,JSON_NUMERIC_CHECK);
         break;
     case "matchDate":
-        vue_match_set_date($con,$params);
+        vue_match_set_date($con, $params);
         break;
     case "matchReset":
         match_save($con, $Cyanide_Key, $params, 1);
@@ -69,10 +71,10 @@ switch ($action) {
         echo json_encode($competition,JSON_NUMERIC_CHECK);
         break;
     case "sponsorsCalendar":
-        sponsors_calendar($con,$params[0]);
+        sponsors_calendar($con, $params[0]);
         break;
     case "sponsorsStanding":
-        sponsors_standing($con,$params[0]);
+        sponsors_standing($con, $params[0]);
         break;
     case "upcomingGames":
         upcomingGames($con);

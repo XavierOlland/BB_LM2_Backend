@@ -5,7 +5,8 @@ set_time_limit(0);
 function match_fetch($con,$id){
     mysqli_set_charset($con,'utf8');
 
-    $sqlMatch = "SELECT m.cyanide_id,
+    $sqlMatch = "SELECT m.id,
+          m.cyanide_id,
           m.contest_id,
           m.competition_id,
           a.site_name as competition_name,
@@ -29,7 +30,10 @@ function match_fetch($con,$id){
           c2.id AS coach_id_2,
           c1.name AS coach_1_name,
           c2.name AS coach_2_name,
-          fl.forum_id AS forum
+          m.score_1 AS team_1_score,
+          m.score_2 AS team_2_score,
+          fl.forum_id AS forum,
+          m.forum_url
           FROM site_matchs as m
           LEFT JOIN site_competitions as a ON a.id=m.competition_id
           LEFT JOIN site_teams as t1 ON t1.id=m.team_id_1
@@ -37,23 +41,28 @@ function match_fetch($con,$id){
           LEFT JOIN site_coachs as c1 ON c1.cyanide_id=t1.coach_id
           LEFT JOIN site_coachs as c2 ON c2.cyanide_id=t2.coach_id
           LEFT JOIN site_forum_links as fl ON fl.competition_id=m.competition_id AND fl.round=m.round
-          WHERE m.id=".$id;
-
+          WHERE m.id='".$id."' OR m.cyanide_id='".$id."'";
     $resultMatch = $con->query($sqlMatch);
     $match = $resultMatch->fetch_object();
 
     $request = './../resources/json/matches/'.$match->cyanide_id.'.json';
     $response  = @file_get_contents($request);
     if($response===FALSE){
-      $sqlJson = "SELECT * FROM site_matchs WHERE id=".$id;
+      $sqlJson = "SELECT * FROM site_matchs WHERE id=".$match->id;
       $resultJson = $con->query($sqlJson);
       $json = $resultJson->fetch_object();
       $response = json_encode($json);
-
     }
 
     $match->json = $response;
     $match->stadium = json_decode($response)->teams[0]->stadiumname;
+
+    $sqlForum = "SELECT forum_id, topic_id FROM forum_posts WHERE post_text LIKE '%<s>[match]</s>".$match->id."<e>[/match]</e>%'";
+    $resultForum = $con->query($sqlForum);
+    $forum = $resultForum->fetch_object();
+    $match->forum_url = "https://bbbl.fr/Forum/viewtopic.php?f=".$forum->forum_id."&t=".$forum->topic_id;
+    $sqlForumURL = "UPDATE site_matchs SET forum_url='".$match->forum_url."' WHERE id=".$match->id;
+    $con->query($sqlForumURL);
 
     // $match->bets = [];
     // $sqlBets = "SELECT p.match_id, m.score_1, m.score_2, p.team_score_1, p.team_score_2, c.name FROM site_matchs AS m, site_bets AS p, site_coachs AS c WHERE c.id=p.coach_id AND p.match_id=m.id AND match_id=".$id;
@@ -63,7 +72,7 @@ function match_fetch($con,$id){
     //     array_push($match->bets, $dataBets);
     // };
 
-    echo json_encode($match);
+    return $match;
 
 };
 
@@ -73,7 +82,6 @@ function match_set_date($con, $params){
     $sqlMatch = "UPDATE site_matchs SET started = str_to_date('".$params->started."','%d/%m/%Y %H:%i') WHERE id=".$params->id;
     $con->query($sqlMatch);
     $con->close();
-};
 //Set date
 function vue_match_set_date($con, $params){
     mysqli_set_charset($con,'utf8');
@@ -119,16 +127,21 @@ function match_save($con, $Cyanide_Key, $params, $reset){
         $con->query("DELETE FROM site_players_stats WHERE cyanide_id_match='".$matchDetails->uuid."'");
     };
 
+    // Update teams and stats
     foreach ($matchDetails->match->teams as $team){
-        //update team
+        // Update team
         $teamBBBL = team_update($con, $Cyanide_Key, $team->idteamlisting);
-        //add players stats
+        // Add players stats
         foreach ($team->roster as $player) {
             if($player->id){
                 player_stats_save($con, $player, $matchDetails->uuid);
             }
         };
     };
+
+    // Post match link to Discord
+    $match = match_fetch($con, $matchDetails->uuid);
+    match_to_discord('#FFCC00', $match );
 };
 
 function save_all_to_json($con, $Cyanide_Key){
