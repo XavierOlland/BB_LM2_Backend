@@ -42,16 +42,18 @@ function match_fetch($con,$id){
           LEFT JOIN site_coachs as c2 ON c2.cyanide_id=t2.coach_id
           LEFT JOIN site_forum_links as fl ON fl.competition_id=m.competition_id AND fl.round=m.round
           WHERE m.id='".$id."' OR m.cyanide_id='".$id."'";
+
     $resultMatch = $con->query($sqlMatch);
     $match = $resultMatch->fetch_object();
 
     $request = './../resources/json/matches/'.$match->cyanide_id.'.json';
     $response  = @file_get_contents($request);
     if($response===FALSE){
-      $sqlJson = "SELECT * FROM site_matchs WHERE id=".$match->id;
+      $sqlJson = "SELECT * FROM site_matchs WHERE id=".$id;
       $resultJson = $con->query($sqlJson);
       $json = $resultJson->fetch_object();
       $response = json_encode($json);
+
     }
 
     $match->json = $response;
@@ -82,6 +84,7 @@ function match_set_date($con, $params){
     $sqlMatch = "UPDATE site_matchs SET started = str_to_date('".$params->started."','%d/%m/%Y %H:%i') WHERE id=".$params->id;
     $con->query($sqlMatch);
     $con->close();
+};
 //Set date
 function vue_match_set_date($con, $params){
     mysqli_set_charset($con,'utf8');
