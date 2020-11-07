@@ -62,6 +62,17 @@ switch ($action) {
         team_fetch($con, $params[0]);
         echo json_encode($team,JSON_NUMERIC_CHECK);
         break;
+    case "teamColoursUpdate":
+        team_colours_update($con, $params[0], $params[1]);
+        break;
+    case "teamPhotoUpdate":
+        $request->enable_super_globals();
+        $name = $_POST['photoName'];
+        $photo = $_FILES['file'];
+        $request->disable_super_globals();
+        $result = team_photo_update($con, $name, $photo);
+        echo $result;
+        break;
     case "sponsors":
         $sponsors = sponsor_fetch_all($con);
         echo json_encode($sponsors);

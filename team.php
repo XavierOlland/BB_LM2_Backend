@@ -131,6 +131,19 @@ function team_competition_fetch($con, $teamID){
     return $competition;
 };
 
+//Change colors
+function team_colours_update($con, $teamID, $colours){
+  $sqlColours = "UPDATE site_teams SET color_1='".$colours[0]."',color_2='".$colours[1]."' WHERE id=".$teamID;
+  $con->query($sqlColours);
+};
+
+//Change picture
+function team_photo_update($con,$name,$photo){
+    $result = move_uploaded_file($photo['tmp_name'], "./../img/teams/".$name.".jpg");
+    $result == 0? http_response_code(304) : http_response_code(200);
+    return $result;
+}
+
 //Get coach info
 function coach_fetch($con, $coachID){
     $sqlCoach = "SELECT name FROM site_coachs WHERE cyanide_id='".$coachID."'";
@@ -138,4 +151,5 @@ function coach_fetch($con, $coachID){
     $coach = $resultCoach->fetch_row();
     return $coach[0];
 };
+
 ?>
