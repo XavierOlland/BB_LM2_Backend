@@ -1,12 +1,11 @@
 <?php
 //Get all competitions
-//Get competition
 /**
- * @param $con : DB connection, mysqli
- * @param $active : is competition active, Boolean
+ * @param mysqli $con : DB connection
+ * @param bool $active : is competition active
+ * @return array
  */
-function competition_fetch_all($con, $active){
-
+function competition_fetch_all($con, bool $active){
     $competitions = [];
     $sql = "SELECT id FROM site_competitions WHERE active=".$active." AND competition_id_parent IS NULL ORDER BY started DESC";
     $result = $con->query($sql);
@@ -20,13 +19,15 @@ function competition_fetch_all($con, $active){
 
 //Get competition
 /**
- * @param $con : DB connection, mysqli
- * @param $id : competition DB ID, Integer
- * @param $stats : fetch statistics, Boolean
+ * @param mysali $con : DB connection
+ * @param int $id : competition DB ID
+ * @param bool $stats : fetch statistics
  */
-function competition_fetch($con, $id, $stats){
-    $sql = "SELECT c.id, c.competition_id_parent, c.league_name AS division, c.game, c.started, c.pool, c.rounds_count, c.site_name,
-    c.site_order, c.season, c.active, c.competition_mode, c.game_name, c.champion, c.param_name_format AS format,
+ //ROUNDSCHECK
+function competition_fetch($con, int $id, bool $stats){
+    $sql = "SELECT c.id, c.competition_id_parent, c.league_name AS division, c.game, c.started, c.pool,
+    (SELECT IFNULL(MAX(round),1) FROM site_matchs WHERE cyanide_id IS NOT NULL AND competition_id=".$id.") AS matchday,
+    c.site_name, c.site_order, c.season, c.active, c.competition_mode, c.game_name, c.champion, c.param_name_format AS format,
     (SELECT COUNT(*) FROM site_matchs WHERE competition_id=".$id." AND cyanide_id IS NULL) AS matchsLeft,
     (SELECT MAX(round) FROM site_matchs WHERE competition_id=".$id.") AS lastRound
     FROM site_competitions AS c  WHERE c.id = ".$id;
@@ -50,10 +51,10 @@ function competition_fetch($con, $id, $stats){
 
 //Get standing
 /**
- * @param $con : DB connection, mysqli
- * @param $id : competition DB ID, Integer
+ * @param mysqli $con : DB connection
+ * @param int $id : competition DB ID
  */
-function competition_standing($con, $id){
+function competition_standing($con, int $id){
     $standing = [];
     $sqlStanding = 'SELECT
           id,
@@ -146,7 +147,7 @@ function competition_standing($con, $id){
  * @param $con : DB connection, mysqli
  * @param $id : competition DB ID, Integer
  */
-function competition_calendar($con, $id){
+function competition_calendar($con, int $id){
     $calendar = [];
     $sqlRounds = "SELECT DISTINCT(round) FROM site_matchs WHERE competition_id=".$id." ORDER BY round";
     $resultRounds = $con->query($sqlRounds);
@@ -181,11 +182,10 @@ function competition_calendar($con, $id){
           array_push($matchsToSave, $dataMatchsToSave[0]);
         };
 
-        $sqlCurrentDay="SELECT IFNULL(MAX(round),1) FROM site_matchs WHERE started IS NOT NULL AND competition_id=".$id;
+        $sqlCurrentDay="SELECT IFNULL(MAX(round),1) FROM site_matchs WHERE cyanide_id IS NOT NULL AND competition_id=".$id;
         $resultCurrentDay = $con->query($sqlCurrentDay);
         $currentDay = $resultCurrentDay->fetch_row();
-        $rounds->currentDay = $currentDay[0];
-        $rounds->currentRound = $currentDay[0];
+        $rounds->$currentDay = $currentDay[0];
         $rounds->matchs = $matchs;
         $rounds->matchsToSave = $matchsToSave;
 
@@ -235,6 +235,7 @@ function competition_update($con, $Cyanide_Key, $Cyanide_League, $params){
     elseif (in_array($params[2],['swiss','single_elimination'])) {
         competition_next_round($con, $Cyanide_Key, $Cyanide_League, $params);
     }
+    //ROUNDSCHECK
   }
 };
 
