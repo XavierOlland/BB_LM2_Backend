@@ -48,7 +48,10 @@ function player_stats_save($con, $player, $cyanideIDMatch){
         $sqlSaveStats = "INSERT INTO site_players_stats (player_id, cyanide_id_player, match_id,  cyanide_id_match,matchplayed, mvp, inflictedpasses, inflictedcatches, inflictedinterceptions, inflictedtouchdowns, inflictedcasualties, inflictedstuns, inflictedko, inflictedinjuries, inflicteddead, inflictedtackles, inflictedmeterspassing, inflictedmetersrunning, sustainedinterceptions, sustainedcasualties, sustainedstuns, sustainedko, sustainedinjuries, sustainedtackles, sustaineddead)
         VALUES (".$playerBBBL[0].",".$player->id.",".$matchBBBL[0].",'".$cyanideIDMatch."',".$player->matchplayed.",".$player->mvp.",".$player->stats->inflictedpasses.",".$player->stats->inflictedcatches.",".$player->stats->inflictedinterceptions.",".$player->stats->inflictedtouchdowns.",".$player->stats->inflictedcasualties.",".$player->stats->inflictedstuns.",".$player->stats->inflictedko.",".$player->stats->inflictedinjuries.",".$player->stats->inflicteddead.",".$player->stats->inflictedtackles.",".$player->stats->inflictedmeterspassing.",".$player->stats->inflictedmetersrunning.",".$player->stats->sustainedinterceptions.",".$player->stats->sustainedcasualties.",".$player->stats->sustainedstuns.",".$player->stats->sustainedko.",".$player->stats->sustainedinjuries.",".$player->stats->sustainedtackles.",".$player->stats->sustaineddead.")";
         $con->query($sqlSaveStats);
+        if($player->stats->sustaineddead == 1){
+            $sqlUpdate = "UPDATE site_players SET dead = 1 WHERE cyanide_id = ".$player->id;
+            $con->query($sqlUpdate);
+        }
     };
 };
-
 ?>
