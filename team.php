@@ -152,4 +152,40 @@ function coach_fetch($con, $coachID){
     return $coach[0];
 };
 
+//Get last games
+function team_last_games($con, $teamID, $limit){
+    $games =  [];
+    $sqlGames = "SELECT m.id,
+          m.cyanide_id,
+          m.competition_id,
+          c.season as season,
+          c.site_name as competition_name,
+          DATE_ADD(m.started, INTERVAL 500 YEAR) AS started,
+          m.team_id_1,
+          m.team_id_2,
+          t1.name AS team_1_name,
+          t2.name AS team_2_name,
+          t1.logo AS team_1_logo,
+          t2.logo AS team_2_logo,
+          t1.param_id_race AS team_1_race,
+          t2.param_id_race AS team_2_race,
+          m.score_1 AS team_1_score,
+          m.score_2 AS team_2_score,
+          c1.name AS team_1_coach,
+          c2.name AS team_2_coach,
+          IF(m.team_id_1=".$teamID.",m.score_1-m.score_2,m.score_2-m.score_1) as diff
+          FROM site_matchs as m
+          LEFT JOIN site_competitions as c ON c.id=m.competition_id
+          LEFT JOIN site_teams as t1 ON t1.id=m.team_id_1
+          LEFT JOIN site_teams as t2 ON t2.id=m.team_id_2
+          LEFT JOIN site_coachs as c1 ON c1.cyanide_id=t1.coach_id
+          LEFT JOIN site_coachs as c2 ON c2.cyanide_id=t2.coach_id
+          WHERE (m.team_ID_1=".$teamID." OR m.team_ID_2=".$teamID.") AND m.cyanide_ID IS NOT NULL ORDER BY m.started DESC LIMIT 5";
+    $resultGames = $con->query($sqlGames);
+    while($dataGames = $resultGames->fetch_assoc()) {
+        array_push($games, $dataGames);
+    }
+    return $games;
+}
+
 ?>
