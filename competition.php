@@ -29,12 +29,12 @@ function competition_fetch($con, $id, $stats){
     c.site_order, c.season, c.active, c.competition_mode, c.game_name, c.champion, c.param_name_format AS format,
     (SELECT COUNT(*) FROM site_matchs WHERE competition_id=".$id." AND cyanide_id IS NULL) AS matchsLeft,
     (SELECT MAX(round) FROM site_matchs WHERE competition_id=".$id.") AS lastRound
-    FROM site_competitions AS c  WHERE c.id = ".$id;
+    FROM site_competitions AS c WHERE c.id = ".$id;
     $result = $con->query($sql);
     $competition = $result->fetch_object();
 
     if($competition->competition_mode!='Sponsors'){
-        $competition->standing = competition_standing($con, $id);
+        $competition->standing = competition_standings($con, $id);
         if($stats == 1){
           $competition = competition_stats($con, $competition);
         }
@@ -53,10 +53,11 @@ function competition_fetch($con, $id, $stats){
  * @param $con : DB connection, mysqli
  * @param $id : competition DB ID, Integer
  */
-function competition_standing($con, $id){
-    $standing = [];
-    $sqlStanding = 'SELECT
+function competition_standings($con, $id){
+    $standings = [];
+    $sqlStandings = "SELECT
           id,
+          $id as competition_id,
           cyanide_id,
           logo,
           race,
@@ -64,45 +65,44 @@ function competition_standing($con, $id){
           color_1,
           color_2,
           coach,
-          COUNT(case when score_1 > score_2 then 1 end) AS V,
-          COUNT(case when score_1 = score_2 then 1 end) AS N,
-          COUNT(case when score_2 > score_1 then 1 end) AS D,
+          COUNT(case when score_1 > score_2 then 1 end) AS win,
+          COUNT(case when score_1 = score_2 then 1 end) AS draw,
+          COUNT(case when score_2 > score_1 then 1 end) AS loss,
           SUM(score_1) AS TDfor,
           SUM(score_1) - SUM(score_2) AS TD,
-          SUM(sustainedcasualties_2 ) - SUM(sustainedcasualties_1) AS S,
+          SUM(sustainedcasualties_2 ) - SUM(sustainedcasualties_1) AS casualties,
           SUM( case when score_1 > score_2 then 3 else 0 end
               + case when score_1 = score_2 AND score_1 IS NOT NULL then 1 else 0 end
-          ) AS Pts,
-          SUM(score_1) - SUM(score_2) + SUM(sustainedcasualties_2 ) - SUM(sustainedcasualties_1) AS TDS,
+          ) AS points,
+          SUM(score_1) - SUM(score_2) + SUM(sustainedcasualties_2) - SUM(sustainedcasualties_1) AS TDS,
           0 AS confrontation1,
           0 AS confrontation2
           FROM (
           SELECT site_matchs.id AS m, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2, site_coachs.name AS coach, score_1, score_2, sustainedcasualties_1, sustainedcasualties_2, sustaineddead_1, sustaineddead_2 FROM site_matchs
           LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
           INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
-          WHERE competition_id = '.$id.'
+          WHERE competition_id = $id
           UNION
           SELECT site_matchs.id AS m, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2, site_coachs.name AS coach, score_2, score_1, sustainedcasualties_2, sustainedcasualties_1, sustaineddead_2, sustaineddead_1 FROM site_matchs
           LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
           INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
-          WHERE competition_id='.$id.'
+          WHERE competition_id = $id
           ) AS a
           WHERE LENGTH(coach)>0
           GROUP BY id
-          ORDER BY Pts DESC, V DESC, TDS DESC';
-
-    $resultStanding = $con->query($sqlStanding);
-    while($dataStanding = $resultStanding->fetch_assoc()) {
-        array_push($standing, $dataStanding);
+          ORDER BY points DESC, win DESC, TDS DESC";
+    $resultStandings = $con->query($sqlStandings);
+    while($dataStandings = $resultStandings->fetch_assoc()) {
+        array_push($standings, $dataStandings);
     }
 
     //Managing exaequo
     for($j = 1; $j <= 2; $j++) {
-      $limit = count($standing);
+      $limit = count($standings);
 
-      for($i = 1; $i <= $limit-1; $i++) {
+      for($i = 1; $i < $limit; $i++) {
           $row = [1];
-          if ( $standing[$i]['Pts'] == $standing[$i-1]['Pts'] ) {
+          if ( $standings[$i]['points'] == $standings[$i-1]['points'] ) {
               $sqlConfrontation = 'SELECT
               case when score_1 > score_2 then 2 else
               case when score_1 = score_2 AND score_1 IS NOT NULL then 1
@@ -111,14 +111,15 @@ function competition_standing($con, $id){
               FROM (
               SELECT site_teams.id, site_teams.name, score_1, score_2 FROM site_matchs
               LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
-              WHERE competition_id = '.$id.' AND site_matchs.team_id_1 = '.$standing[$i]['id'].' AND site_matchs.team_id_2 = '.$standing[$i-1]['id'].'
+              WHERE competition_id = '.$id.' AND site_matchs.team_id_1 = '.$standings[$i]['id'].' AND site_matchs.team_id_2 = '.$standings[$i-1]['id'].'
               UNION
               SELECT site_teams.id, site_teams.name, score_2, score_1 FROM site_matchs
               LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
-              WHERE competition_id='.$id.' AND site_matchs.team_id_2 = '.$standing[$i]['id'].' AND site_matchs.team_id_1 = '.$standing[$i-1]['id'].'
+              WHERE competition_id='.$id.' AND site_matchs.team_id_2 = '.$standings[$i]['id'].' AND site_matchs.team_id_1 = '.$standings[$i-1]['id'].'
               ) AS a
               GROUP BY id';
               $result = $con->query($sqlConfrontation);
+
               if(  mysqli_num_rows($result) > 0){
                 $row = $result->fetch_row();
               }
@@ -127,17 +128,17 @@ function competition_standing($con, $id){
               }
 
             }
-        $standing[$i]['confrontation'.$j] = $row[0];
+        $standings[$i]['confrontation'.$j] = $row[0];
       }
 
-      array_multisort(array_column($standing, 'Pts'),  SORT_DESC,
-                array_column($standing, 'confrontation1'), SORT_DESC,
-                array_column($standing, 'confrontation2'), SORT_DESC,
-                array_column($standing, 'V'), SORT_DESC,
-                array_column($standing, 'TDS'), SORT_DESC,
-                $standing);
+      array_multisort(array_column($standings, 'points'),  SORT_DESC,
+                array_column($standings, 'confrontation1'), SORT_DESC,
+                array_column($standings, 'confrontation2'), SORT_DESC,
+                array_column($standings, 'win'), SORT_DESC,
+                array_column($standings, 'TDS'), SORT_DESC,
+                $standings);
     }
-    return $standing;
+    return $standings;
 
 };
 
@@ -367,8 +368,8 @@ function competition_add_matchs($con, $Cyanide_Key, $competitionID, $competition
             }
             //add match
             $sqlMatch = "INSERT INTO site_matchs (contest_id, cyanide_id, competition_id, round, team_id_1, team_id_2)
-            VALUES (".$match->contest_id.",NULL,".$competitionID.",".$match->round.",".$match->teamBBBL[0].",".$match->teamBBBL[1].")";
-            echo $sqlMatch."<br/>";
+            VALUES (".$match->contest_id.",'".$match->match_uuid."',".$competitionID.",".$match->round.",".$match->teamBBBL[0].",".$match->teamBBBL[1].")";
+            //echo $sqlMatch;
             $con->query($sqlMatch);
         }
     }

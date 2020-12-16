@@ -12,6 +12,7 @@ include('season.php');
 include('forum.php');
 include('player.php');
 include('team.php');
+include('tools/tool.php');
 
 
 switch ($action) {
@@ -31,6 +32,9 @@ switch ($action) {
   case "seasonArchive":
     champion_set($con);
     season_archive($con);
+    break;
+  case "saveStandings":
+    save_standings($con);
     break;
   default:
     echo "Erreur!";
