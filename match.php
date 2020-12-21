@@ -124,7 +124,7 @@ function match_save($con, $Cyanide_Key, $params, $reset){
       sustainedko_2 = '".$matchDetails->match->teams[1]->sustainedko."',
       sustainedinjuries_2 = '".$matchDetails->match->teams[1]->sustainedinjuries."',
       sustaineddead_2 = '".$matchDetails->match->teams[1]->sustaineddead."'
-      WHERE contest_id=".$params[1]." OR cyanide_id = '".$matchDetails->uuid."'";
+      WHERE cyanide_id = '".$matchDetails->uuid."'";
       $con->query($sqlMatch);
     if($reset == 1){
         $con->query("DELETE FROM site_players_stats WHERE cyanide_id_match='".$matchDetails->uuid."'");

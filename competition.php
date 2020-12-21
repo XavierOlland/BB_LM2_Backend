@@ -457,6 +457,7 @@ function competition_add($con, $Cyanide_Key, $competition){
     };
 
     if ( $test_competition[0] == 0 ){
+        $competition->game_name = str_replace("'","\'",$competition->game_name);
         //Saving competition
         $sql = "INSERT INTO site_competitions ( cyanide_id, league_name, param_name_format, champion, pool, game_name, season, competition_mode, site_order, site_name, active, started, competition_id_parent, sponsor_id_1, sponsor_id_2, `round`) VALUES (".$competition->cyanide_id.",'".$competition->league_name."','".$competition->format."','".$competition->champion."','".$competition->pool."','".$competition->game_name."',CONCAT('".$competition->season." ', YEAR(DATE_ADD(NOW(), INTERVAL 500 YEAR)) ),'".$competition->competition_mode."',".$competition->site_order.",'".$competition->site_name."','1',NOW(),".$competition->competition_id_parent.",".$competition->sponsor_id_1.",".$competition->sponsor_id_2.",0)";
         //"

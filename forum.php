@@ -54,7 +54,7 @@ function forum_fetch_all($con,$id){
 
 function forum_links_add($con, $competition){
   $current_id = $competition->forum_id;
-  $maxRound = max(array_column($array, 'round'));
+  //$maxRound = max(array_column($array, 'round'));
   for($i=1; $i<=$competition->rounds_count; $i++){
     $sqlLink = "INSERT INTO site_forum_links (competition_id, round, forum_id) VALUES (".$competition->id.",".$i.",".$current_id.")";
     $con->query($sqlLink);
