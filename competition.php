@@ -141,6 +141,40 @@ function competition_standings($con, $id){
     return $standings;
 
 };
+//Save standings
+function competition_standings_save($con, $id){
+    $sqlCount = "SELECT count(*) FROM site_competitions_standings WHERE competition_id=$id";
+    $result = $con->query($sqlCount);
+    $count =$result->fetch_row();
+    $standings = competition_standings($con,$id);
+    for($i = 0; $i < count($standings); $i++) {
+        $j=$i+1;
+        if($count[0] == 0 ){
+            $sqlSaveStandings = "INSERT INTO site_competitions_standings (competition_id, rank, team_id, team_name, team_logo, points, win, draw, loss, touchdowns, casualties )
+            VALUES ($competition[0], $j,
+              ".$standings[$i]['id'].",
+              '".$standings[$i]['name']."',
+              '".$standings[$i]['logo']."',
+              '".$standings[$i]['points']."',
+              '".$standings[$i]['win']."',
+              '".$standings[$i]['draw']."',
+              '".$standings[$i]['loss']."',
+              '".$standings[$i]['TD']."',
+              '".$standings[$i]['casualties']."' )";}
+        else {
+            $sqlSaveStandings = "UPDATE site_competitions_standings
+            SET rank = $j,
+            points = '".$standings[$i]['points']."',
+            win = '".$standings[$i]['win']."',
+            draw = '".$standings[$i]['draw']."',,
+            loss = '".$standings[$i]['loss']."',,
+            touchdowns = '".$standings[$i]['TD']."',,
+            casualties = '".$standings[$i]['casualties']."'
+            WHERE competition_id=$id AND team_id=".$standings[$i]['id'];
+        }
+        $con->query($sqlSaveStandings);
+    }
+}
 
 //Get fixtures
 /**

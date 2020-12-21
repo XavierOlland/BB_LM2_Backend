@@ -34,7 +34,8 @@ switch ($action) {
     season_archive($con);
     break;
   case "saveStandings":
-    save_standings($con);
+    //save_standings($con);
+    competition_standings_save($con, $params[0]);
     break;
   default:
     echo "Erreur!";
