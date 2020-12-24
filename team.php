@@ -186,6 +186,17 @@ function team_last_games($con, $teamID, $limit){
         array_push($games, $dataGames);
     }
     return $games;
-}
+};
+
+//Get team history
+function team_history($con, $teamID){
+    $history = [];
+    $sqlHistory = "SELECT * FROM site_competitions_standings WHERE team_id=$teamID";
+    $resultHistory = $con->query($sqlHistory);
+    while($dataHistory = $resultHistory->fetch_assoc()) {
+        array_push($history, $dataHistory);
+    }
+    return $history;
+};
 
 ?>
