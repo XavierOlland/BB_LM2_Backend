@@ -57,9 +57,10 @@ function competition_standings($con, $id){
     $standings = [];
     $sqlStandings = "SELECT
           $id as competition_id,
-          IF(STRCMP(competition_name,season)=1, competition_name, CONCAT(season,' - ',competition_name)) AS competition_name,
-          cyanide_id AS competition_cyanide_id,
+          IF(competition_name=season, competition_name, CONCAT(season,' - ',competition_name)) AS competition_name,
+          champion AS champion,
           id AS team_id,
+          cyanide_id AS team_cyanide_id,
           name AS team_name,
           logo AS team_logo,
           race AS team_race,
@@ -82,7 +83,7 @@ function competition_standings($con, $id){
           FROM (
           SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
           site_coachs.id AS coach_id, site_coachs.name AS coach_name,
-          site_competitions.site_name AS competition_name, site_competitions.season AS season,
+          site_competitions.site_name AS competition_name, site_competitions.season AS season, site_competitions.champion as champion,
           score_1, score_2, sustainedcasualties_1, sustainedcasualties_2, sustaineddead_1, sustaineddead_2
           FROM site_matchs
           LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
@@ -92,7 +93,7 @@ function competition_standings($con, $id){
           UNION
           SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
           site_coachs.id AS coach_id, site_coachs.name AS coach_name,
-          site_competitions.site_name AS competition_name, site_competitions.season AS season,
+          site_competitions.site_name AS competition_name, site_competitions.season AS season, site_competitions.champion as champion,
           score_2, score_1, sustainedcasualties_2, sustainedcasualties_1, sustaineddead_2, sustaineddead_1
           FROM site_matchs
           LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
