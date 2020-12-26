@@ -40,7 +40,6 @@ function team_create($con, $Cyanide_Key, $id){
     $team->stadium_name = str_replace("'","\'",$team->stadiumname);
     $team->leitmotiv = str_replace("'","\'",$team->leitmotiv);
     $sqlCreate = "INSERT INTO site_teams ( name, cyanide_id, coach_id, param_id_race, active, apothecary, assistantcoaches,  cheerleaders, cash, rerolls, popularity, value, stadium_name, stadium_level, leitmotiv, logo) VALUES ('".$team->name."', '".$team->id."', '".$team->idcoach."', '".$team->idraces."', '1', '".$team->apothecary."', '".$team->assistantcoaches."', '".$team->cheerleaders."', '".$team->cash."', '".$team->rerolls."', '".$team->popularity."', '".$team->value."', '".$team->stadium_name."', ".$team->stadiumlevel.", '".$team->leitmotiv."', '".$team->logo."')";
-    //echo $sqlCreate.'<br/>';
     $con->query($sqlCreate);
     $team->bbblID = $con->insert_id;
 
@@ -191,7 +190,7 @@ function team_last_games($con, $teamID, $limit){
 //Get team history
 function team_history($con, $teamID){
     $history = [];
-    $sqlHistory = "SELECT * FROM site_competitions_standings WHERE team_id=$teamID";
+    $sqlHistory = "SELECT * FROM site_competitions_standings WHERE team_id=$teamID ORDER BY id DESC";
     $resultHistory = $con->query($sqlHistory);
     while($dataHistory = $resultHistory->fetch_assoc()) {
         array_push($history, $dataHistory);

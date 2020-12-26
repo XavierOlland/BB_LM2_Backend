@@ -56,15 +56,17 @@ function competition_fetch($con, $id, $stats){
 function competition_standings($con, $id){
     $standings = [];
     $sqlStandings = "SELECT
-          id,
           $id as competition_id,
-          cyanide_id,
-          logo,
-          race,
-          name,
-          color_1,
-          color_2,
-          coach,
+          IF(STRCMP(competition_name,season)=1, competition_name, CONCAT(season,' - ',competition_name)) AS competition_name,
+          cyanide_id AS competition_cyanide_id,
+          id AS team_id,
+          name AS team_name,
+          logo AS team_logo,
+          race AS team_race,
+          color_1 AS team_color_1,
+          color_2 AS team_color_2,
+          coach_id,
+          coach_name,
           COUNT(case when score_1 > score_2 then 1 end) AS win,
           COUNT(case when score_1 = score_2 then 1 end) AS draw,
           COUNT(case when score_2 > score_1 then 1 end) AS loss,
@@ -78,17 +80,27 @@ function competition_standings($con, $id){
           0 AS confrontation1,
           0 AS confrontation2
           FROM (
-          SELECT site_matchs.id AS m, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2, site_coachs.name AS coach, score_1, score_2, sustainedcasualties_1, sustainedcasualties_2, sustaineddead_1, sustaineddead_2 FROM site_matchs
+          SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
+          site_coachs.id AS coach_id, site_coachs.name AS coach_name,
+          site_competitions.site_name AS competition_name, site_competitions.season AS season,
+          score_1, score_2, sustainedcasualties_1, sustainedcasualties_2, sustaineddead_1, sustaineddead_2
+          FROM site_matchs
+          LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
           LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
           INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
           WHERE competition_id = $id
           UNION
-          SELECT site_matchs.id AS m, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2, site_coachs.name AS coach, score_2, score_1, sustainedcasualties_2, sustainedcasualties_1, sustaineddead_2, sustaineddead_1 FROM site_matchs
+          SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
+          site_coachs.id AS coach_id, site_coachs.name AS coach_name,
+          site_competitions.site_name AS competition_name, site_competitions.season AS season,
+          score_2, score_1, sustainedcasualties_2, sustainedcasualties_1, sustaineddead_2, sustaineddead_1
+          FROM site_matchs
+          LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
           LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
           INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
           WHERE competition_id = $id
           ) AS a
-          WHERE LENGTH(coach)>0
+          WHERE LENGTH(coach_id)>0
           GROUP BY id
           ORDER BY points DESC, win DESC, TDS DESC";
     $resultStandings = $con->query($sqlStandings);
@@ -111,11 +123,11 @@ function competition_standings($con, $id){
               FROM (
               SELECT site_teams.id, site_teams.name, score_1, score_2 FROM site_matchs
               LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
-              WHERE competition_id = '.$id.' AND site_matchs.team_id_1 = '.$standings[$i]['id'].' AND site_matchs.team_id_2 = '.$standings[$i-1]['id'].'
+              WHERE competition_id = '.$id.' AND site_matchs.team_id_1 = '.$standings[$i]['team_id'].' AND site_matchs.team_id_2 = '.$standings[$i-1]['team_id'].'
               UNION
               SELECT site_teams.id, site_teams.name, score_2, score_1 FROM site_matchs
               LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
-              WHERE competition_id='.$id.' AND site_matchs.team_id_2 = '.$standings[$i]['id'].' AND site_matchs.team_id_1 = '.$standings[$i-1]['id'].'
+              WHERE competition_id='.$id.' AND site_matchs.team_id_2 = '.$standings[$i]['team_id'].' AND site_matchs.team_id_1 = '.$standings[$i-1]['team_id'].'
               ) AS a
               GROUP BY id';
               $result = $con->query($sqlConfrontation);
