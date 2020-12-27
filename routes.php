@@ -7,6 +7,7 @@ $postdata = file_get_contents("php://input");
 $params = json_decode($postdata);
 
 include('parameters.php');
+include('archives.php');
 include('competition.php');
 include('match.php');
 include('player.php');
@@ -60,6 +61,10 @@ switch ($action) {
     case "teamLastGames":
         $games = team_last_games($con,$params[0],$params[1]);
         echo json_encode($games,JSON_NUMERIC_CHECK);
+        break;
+    case "teamHistory":
+        $history = team_history($con,$params[0]);
+        echo json_encode($history,JSON_NUMERIC_CHECK);
         break;
     case "teamUpdate":
         team_update($con, $Cyanide_Key, $params->id);
