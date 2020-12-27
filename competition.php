@@ -60,7 +60,8 @@ function competition_standings($con, $id){
     $standings = [];
     $sqlStandings = "SELECT
           $id as competition_id,
-          IF(competition_name=season, competition_name, CONCAT(season,' - ',competition_name)) AS competition_name,
+          season,
+          competition_name,
           champion AS champion,
           id AS team_id,
           cyanide_id AS team_cyanide_id,
@@ -165,17 +166,18 @@ function competition_standings_save($con, $id){
     $standings = competition_standings($con,$id);
     for($i = 0; $i < count($standings); $i++) {
         $j=$i+1;
+        $season = $con->real_escape_string($standings[$i]['season']);
         $competition_name = $con->real_escape_string($standings[$i]['competition_name']);
         $team_name = $con->real_escape_string($standings[$i]['team_name']);
         $coach_name = $con->real_escape_string($standings[$i]['coach_name']);
         $matches = $standings[$i]['win']+$standings[$i]['draw']+$standings[$i]['loss'];
         if($count[0] == 0 ){
             $sqlSaveStandings = "INSERT INTO site_competitions_standings
-            (competition_id, competition_name, champion,
+            (season, competition_id, competition_name, champion,
             rank, team_id, team_cyanide_id, team_name, team_logo, team_race, team_colors,
             coach_id, coach_name,
             points, matches, win, draw, loss, touchdowns, touchdowns_diff, casualties, casualties_diff )
-            VALUES ($competition[0], '$competition_name', '".$standings[$i]['champion']."',
+            VALUES ('$season',$competition[0], '$competition_name', '".$standings[$i]['champion']."',
               $j,".$standings[$i]['team_id'].",".$standings[$i]['team_cyanide_id'].",'$team_name',".$standings[$i]['team_race'].",'".$standings[$i]['team_logo']."','[\"".$standings[$i]['team_color_1']."\",\"".$standings[$i]['team_color_2']."\"]',
               ".$standings[$i]['coach_id'].",'$coach_name',
               ".$standings[$i]['points'].",$matches,".$standings[$i]['win'].",".$standings[$i]['draw'].",".$standings[$i]['loss'].",".$standings[$i]['touchdowns'].",".$standings[$i]['touchdowns_diff'].",".$standings[$i]['casualties'].",".$standings[$i]['casualties_diff']." )";
