@@ -6,7 +6,6 @@
  * @param $active : is competition active, Boolean
  */
 function competition_fetch_all($con, $active){
-
     $competitions = [];
     $sql = "SELECT id FROM site_competitions WHERE active=".$active." AND competition_id_parent IS NULL ORDER BY started DESC";
     $result = $con->query($sql);
@@ -32,9 +31,13 @@ function competition_fetch($con, $id, $stats){
     FROM site_competitions AS c WHERE c.id = ".$id;
     $result = $con->query($sql);
     $competition = $result->fetch_object();
-
     if($competition->competition_mode!='Sponsors'){
-        $competition->standing = competition_standings($con, $id);
+        if($competition->active == 1){
+            $competition->standing = competition_standings($con, $id);
+        }
+        else {
+            $competition->standing = archives_standings($con, $id);
+        }
         if($stats == 1){
           $competition = competition_stats($con, $competition);
         }
@@ -68,38 +71,37 @@ function competition_standings($con, $id){
           color_2 AS team_color_2,
           coach_id,
           coach_name,
+          SUM( case when score_1 > score_2 then 3 else 0 end + case when score_1 = score_2 AND score_1 IS NOT NULL then 1 else 0 end) AS points,
           COUNT(case when score_1 > score_2 then 1 end) AS win,
           COUNT(case when score_1 = score_2 then 1 end) AS draw,
           COUNT(case when score_2 > score_1 then 1 end) AS loss,
-          SUM(score_1) AS TDfor,
-          SUM(score_1) - SUM(score_2) AS TD,
-          SUM(sustainedcasualties_2 ) - SUM(sustainedcasualties_1) AS casualties,
-          SUM( case when score_1 > score_2 then 3 else 0 end
-              + case when score_1 = score_2 AND score_1 IS NOT NULL then 1 else 0 end
-          ) AS points,
+          SUM(score_1) AS touchdowns,
+          SUM(score_1) - SUM(score_2) AS touchdowns_diff,
+          SUM(sustainedcasualties_2 ) AS casualties,
+          SUM(sustainedcasualties_2 ) - SUM(sustainedcasualties_1) AS casualties_diff,
           SUM(score_1) - SUM(score_2) + SUM(sustainedcasualties_2) - SUM(sustainedcasualties_1) AS TDS,
           0 AS confrontation1,
           0 AS confrontation2
           FROM (
-          SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
-          site_coachs.id AS coach_id, site_coachs.name AS coach_name,
-          site_competitions.site_name AS competition_name, site_competitions.season AS season, site_competitions.champion as champion,
-          score_1, score_2, sustainedcasualties_1, sustainedcasualties_2, sustaineddead_1, sustaineddead_2
-          FROM site_matchs
-          LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
-          LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
-          INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
-          WHERE competition_id = $id
-          UNION
-          SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
-          site_coachs.id AS coach_id, site_coachs.name AS coach_name,
-          site_competitions.site_name AS competition_name, site_competitions.season AS season, site_competitions.champion as champion,
-          score_2, score_1, sustainedcasualties_2, sustainedcasualties_1, sustaineddead_2, sustaineddead_1
-          FROM site_matchs
-          LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
-          LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
-          INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
-          WHERE competition_id = $id
+            SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
+            site_coachs.id AS coach_id, site_coachs.name AS coach_name,
+            site_competitions.site_name AS competition_name, site_competitions.season AS season, site_competitions.champion as champion,
+            score_1, score_2, sustainedcasualties_1, sustainedcasualties_2, sustaineddead_1, sustaineddead_2
+            FROM site_matchs
+            LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
+            LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
+            INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
+            WHERE competition_id = $id
+            UNION
+            SELECT site_matchs.id AS game, site_teams.id AS id, site_teams.cyanide_id AS cyanide_id, site_teams.logo AS logo, site_teams.param_id_race AS race, site_teams.name AS name, site_teams.color_1 AS color_1, site_teams.color_2 AS color_2,
+            site_coachs.id AS coach_id, site_coachs.name AS coach_name,
+            site_competitions.site_name AS competition_name, site_competitions.season AS season, site_competitions.champion as champion,
+            score_2, score_1, sustainedcasualties_2, sustainedcasualties_1, sustaineddead_2, sustaineddead_1
+            FROM site_matchs
+            LEFT JOIN site_competitions ON site_competitions.id=site_matchs.competition_id
+            LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
+            INNER JOIN site_coachs ON site_coachs.cyanide_id=site_teams.coach_id
+            WHERE competition_id = $id
           ) AS a
           WHERE LENGTH(coach_id)>0
           GROUP BY id
@@ -122,13 +124,13 @@ function competition_standings($con, $id){
               else 0 end end,
               name
               FROM (
-              SELECT site_teams.id, site_teams.name, score_1, score_2 FROM site_matchs
-              LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
-              WHERE competition_id = '.$id.' AND site_matchs.team_id_1 = '.$standings[$i]['team_id'].' AND site_matchs.team_id_2 = '.$standings[$i-1]['team_id'].'
-              UNION
-              SELECT site_teams.id, site_teams.name, score_2, score_1 FROM site_matchs
-              LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
-              WHERE competition_id='.$id.' AND site_matchs.team_id_2 = '.$standings[$i]['team_id'].' AND site_matchs.team_id_1 = '.$standings[$i-1]['team_id'].'
+                SELECT site_teams.id, site_teams.name, score_1, score_2 FROM site_matchs
+                LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_1
+                WHERE competition_id = '.$id.' AND site_matchs.team_id_1 = '.$standings[$i]['team_id'].' AND site_matchs.team_id_2 = '.$standings[$i-1]['team_id'].'
+                UNION
+                SELECT site_teams.id, site_teams.name, score_2, score_1 FROM site_matchs
+                LEFT JOIN site_teams ON site_teams.id=site_matchs.team_id_2
+                WHERE competition_id='.$id.' AND site_matchs.team_id_2 = '.$standings[$i]['team_id'].' AND site_matchs.team_id_1 = '.$standings[$i-1]['team_id'].'
               ) AS a
               GROUP BY id';
               $result = $con->query($sqlConfrontation);
@@ -154,6 +156,7 @@ function competition_standings($con, $id){
     return $standings;
 
 };
+
 //Save standings
 function competition_standings_save($con, $id){
     $sqlCount = "SELECT count(*) FROM site_competitions_standings WHERE competition_id=$id";
@@ -162,27 +165,33 @@ function competition_standings_save($con, $id){
     $standings = competition_standings($con,$id);
     for($i = 0; $i < count($standings); $i++) {
         $j=$i+1;
+        $competition_name = $con->real_escape_string($standings[$i]['competition_name']);
+        $team_name = $con->real_escape_string($standings[$i]['team_name']);
+        $coach_name = $con->real_escape_string($standings[$i]['coach_name']);
+        $matches = $standings[$i]['win']+$standings[$i]['draw']+$standings[$i]['loss'];
         if($count[0] == 0 ){
-            $sqlSaveStandings = "INSERT INTO site_competitions_standings (competition_id, rank, team_id, team_name, team_logo, points, win, draw, loss, touchdowns, casualties )
-            VALUES ($competition[0], $j,
-              ".$standings[$i]['id'].",
-              '".$standings[$i]['name']."',
-              '".$standings[$i]['logo']."',
-              '".$standings[$i]['points']."',
-              '".$standings[$i]['win']."',
-              '".$standings[$i]['draw']."',
-              '".$standings[$i]['loss']."',
-              '".$standings[$i]['TD']."',
-              '".$standings[$i]['casualties']."' )";}
+            $sqlSaveStandings = "INSERT INTO site_competitions_standings
+            (competition_id, competition_name, champion,
+            rank, team_id, team_cyanide_id, team_name, team_logo, team_race, team_colors,
+            coach_id, coach_name,
+            points, matches, win, draw, loss, touchdowns, touchdowns_diff, casualties, casualties_diff )
+            VALUES ($competition[0], '$competition_name', '".$standings[$i]['champion']."',
+              $j,".$standings[$i]['team_id'].",".$standings[$i]['team_cyanide_id'].",'$team_name',".$standings[$i]['team_race'].",'".$standings[$i]['team_logo']."','[\"".$standings[$i]['team_color_1']."\",\"".$standings[$i]['team_color_2']."\"]',
+              ".$standings[$i]['coach_id'].",'$coach_name',
+              ".$standings[$i]['points'].",$matches,".$standings[$i]['win'].",".$standings[$i]['draw'].",".$standings[$i]['loss'].",".$standings[$i]['touchdowns'].",".$standings[$i]['touchdowns_diff'].",".$standings[$i]['casualties'].",".$standings[$i]['casualties_diff']." )";
+        }
         else {
             $sqlSaveStandings = "UPDATE site_competitions_standings
             SET rank = $j,
             points = '".$standings[$i]['points']."',
             win = '".$standings[$i]['win']."',
-            draw = '".$standings[$i]['draw']."',,
-            loss = '".$standings[$i]['loss']."',,
-            touchdowns = '".$standings[$i]['TD']."',,
-            casualties = '".$standings[$i]['casualties']."'
+            draw = '".$standings[$i]['draw']."',
+            loss = '".$standings[$i]['loss']."',
+            matches = $matches,
+            touchdowns = '".$standings[$i]['touchdowns']."',
+            touchdowns_diff = '".$standings[$i]['touchdowns_diff']."',
+            casualties = '".$standings[$i]['casualties']."',
+            casualties_diff = '".$standings[$i]['casualties_diff']."'
             WHERE competition_id=$id AND team_id=".$standings[$i]['id'];
         }
         $con->query($sqlSaveStandings);

@@ -7,6 +7,7 @@ $postdata = file_get_contents("php://input");
 $params = json_decode($postdata);
 
 include('parameters.php');
+include('archives.php');
 include('competition.php');
 include('match.php');
 include('player.php');
